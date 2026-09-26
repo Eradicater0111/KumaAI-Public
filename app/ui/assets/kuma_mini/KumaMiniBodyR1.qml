@@ -1,0 +1,1908 @@
+import QtQuick
+import QtQuick3D
+import QtQuick3D.AssetUtils
+
+Item {
+    id: root
+
+    width: 180
+    height: 190
+
+    property string bodyState: "idle"
+
+    // KUMA-AVATAR-1D renderer-only expressive mechanics.
+    //
+    // These are bounded presentation parameters supplied by Python.
+    // They are not screen coordinates, target identity, cognition,
+    // permission, verification, or action state.
+    property real avatarMotionEnergy: 0.0
+    property real avatarExpressionIntensity: 0.0
+    property real avatarGazeYaw: 0.0
+    property real avatarGazePitch: 0.0
+    property real inspectionYaw: 0.0
+    property real inspectionPitch: 0.0
+    property real phase: 0.0
+
+    property real hoverAmount: {
+        if (bodyState === "happy")
+            return 7.0
+
+        if (bodyState === "alert")
+            return 2.0
+
+        if (bodyState === "focused")
+            return 1.5
+
+        if (bodyState === "sleep")
+            return 1.5
+
+        return 3.5
+    }
+
+    property real hoverOffset:
+        Math.sin(phase) * hoverAmount
+
+    // =====================================================
+    // AUTONOMOUS MICRO-BEHAVIOR
+    // =====================================================
+    //
+    // Presentation-level body language only.
+    // Kuma's existing personality / reasoning remains the brain.
+    // These values produce small creature-like spontaneous motion.
+    // =====================================================
+
+    property bool blinkClosed: false
+
+    property real curiosityYaw: 0.0
+    property real curiosityPitch: 0.0
+
+    property real leftEarTwitch: 0.0
+    property real rightEarTwitch: 0.0
+
+    property real idleBreath:
+        Math.sin(
+            phase * 0.72
+        )
+
+    property real happyBounce:
+        Math.max(
+            0,
+            Math.sin(
+                phase * 2.0
+            )
+        )
+
+    property real blinkScale: {
+        if (bodyState === "sleep")
+            return 0.10
+
+        if (bodyState === "thinking")
+            return 0.35
+
+        if (bodyState === "focused")
+            return 0.48
+
+        if (
+            bodyState === "idle"
+            && Math.sin(phase * 2.7) > 0.985
+        )
+            return 0.10
+
+        return 1.0
+    }
+
+    property real eyeTrack: {
+        if (bodyState !== "observing")
+            return 0.0
+
+        return Math.sin(
+            phase * 1.35
+        ) * 4.5
+    }
+
+    Timer {
+        id: blinkTimer
+
+        interval: 2400
+        repeat: false
+        running: true
+
+        onTriggered: {
+            if (
+                root.bodyState !== "sleep"
+                && root.bodyState !== "alert"
+            ) {
+                root.blinkClosed = true
+                blinkOpenTimer.start()
+            }
+
+            interval =
+                1800
+                + Math.random() * 4200
+
+            restart()
+        }
+    }
+
+    Timer {
+        id: blinkOpenTimer
+
+        interval: 115
+        repeat: false
+
+        onTriggered: {
+            root.blinkClosed = false
+        }
+    }
+
+    Timer {
+        id: curiosityTimer
+
+        interval: 3300
+        repeat: false
+        running: true
+
+        onTriggered: {
+            if (
+                root.bodyState === "idle"
+            ) {
+                root.curiosityYaw =
+                    -5.0
+                    + Math.random() * 10.0
+
+                root.curiosityPitch =
+                    -2.5
+                    + Math.random() * 5.0
+
+                if (
+                    Math.random() > 0.63
+                ) {
+                    if (
+                        Math.random() > 0.5
+                    ) {
+                        root.leftEarTwitch = -6.0
+                        leftEarResetTimer.restart()
+                    }
+                    else {
+                        root.rightEarTwitch = 6.0
+                        rightEarResetTimer.restart()
+                    }
+                }
+            }
+
+            else {
+                root.curiosityYaw = 0.0
+                root.curiosityPitch = 0.0
+            }
+
+            interval =
+                2200
+                + Math.random() * 4200
+
+            restart()
+        }
+    }
+
+    Timer {
+        id: leftEarResetTimer
+
+        interval: 240
+
+        onTriggered: {
+            root.leftEarTwitch = 0.0
+        }
+    }
+
+    Timer {
+        id: rightEarResetTimer
+
+        interval: 240
+
+        onTriggered: {
+            root.rightEarTwitch = 0.0
+        }
+    }
+
+    Behavior on curiosityYaw {
+        NumberAnimation {
+            duration: 650
+            easing.type:
+                Easing.InOutQuad
+        }
+    }
+
+    Behavior on curiosityPitch {
+        NumberAnimation {
+            duration: 650
+            easing.type:
+                Easing.InOutQuad
+        }
+    }
+
+    Behavior on leftEarTwitch {
+        NumberAnimation {
+            duration: 160
+            easing.type:
+                Easing.OutQuad
+        }
+    }
+
+    Behavior on rightEarTwitch {
+        NumberAnimation {
+            duration: 160
+            easing.type:
+                Easing.OutQuad
+        }
+    }
+
+
+
+    // =================================================
+    // KUMA-AVATAR-1E VISUAL TRANSITION CONTINUITY
+    // =================================================
+    //
+    // TARGET VALUE != CURRENT INTERPOLATED VALUE
+    // INTERPOLATION != SEMANTIC STATE
+    // EASING != COGNITION
+    // ANIMATION TIME != AUTHORITY
+    // VISUAL CONTINUITY != EXECUTION
+    // BODY STATE REMAINS IMMEDIATE
+    //
+    // Only Avatar-1D renderer mechanics ease between target values.
+    // bodyState, speech/listening truth and lifecycle semantics remain
+    // immediate; this layer changes presentation continuity only.
+    // =================================================
+
+    Behavior on avatarMotionEnergy {
+        NumberAnimation {
+            duration: 260
+
+            easing.type:
+                Easing.InOutQuad
+        }
+    }
+
+    Behavior on avatarExpressionIntensity {
+        NumberAnimation {
+            duration: 220
+
+            easing.type:
+                Easing.OutQuad
+        }
+    }
+
+    Behavior on avatarGazeYaw {
+        NumberAnimation {
+            duration: 320
+
+            easing.type:
+                Easing.InOutQuad
+        }
+    }
+
+    Behavior on avatarGazePitch {
+        NumberAnimation {
+            duration: 320
+
+            easing.type:
+                Easing.InOutQuad
+        }
+    }
+
+    NumberAnimation on phase {
+        from: 0
+        to: Math.PI * 2
+        duration: 2700
+        loops: Animation.Infinite
+    }
+
+    // =====================================================
+    // DESKTOP SHADOW / FLOAT RING
+    // =====================================================
+
+    Rectangle {
+        width: 88
+        height: 11
+
+        radius: 6
+
+        anchors.horizontalCenter:
+            parent.horizontalCenter
+
+        y: 162
+
+        color: "#25000000"
+
+        scale:
+            1.0
+            - Math.abs(
+                root.hoverOffset
+            ) * 0.008
+    }
+
+    Rectangle {
+        width: 84
+        height: 14
+
+        radius: 7
+
+        anchors.horizontalCenter:
+            parent.horizontalCenter
+
+        y: 157
+
+        color: "transparent"
+
+        border.width: 1
+        border.color: "#77ffc56d"
+
+        opacity:
+            0.38
+            + Math.sin(
+                root.phase
+            ) * 0.07
+    }
+
+    // =====================================================
+    // 3D WORLD
+    // =====================================================
+
+    View3D {
+        anchors.fill: parent
+
+        environment: SceneEnvironment {
+            backgroundMode:
+                SceneEnvironment.Transparent
+
+            antialiasingMode:
+                SceneEnvironment.MSAA
+
+            antialiasingQuality:
+                SceneEnvironment.High
+
+            aoStrength: 90
+            aoDistance: 20
+            aoSoftness: 45
+        }
+
+        PerspectiveCamera {
+            position:
+                Qt.vector3d(
+                    0,
+                    0,
+                    220
+                )
+
+            clipNear: 1
+            clipFar: 1000
+        }
+
+        // -------------------------------------------------
+        // LIVE DIGITAL VISOR MATERIAL
+        // -------------------------------------------------
+
+        Texture {
+            id: faceDisplayTexture
+
+            sourceItem:
+                faceTextureSource
+
+            generateMipmaps: false
+        }
+
+        PrincipledMaterial {
+            id: faceDisplayMaterial
+
+            baseColor: "#ffffff"
+
+            baseColorMap:
+                faceDisplayTexture
+
+            emissiveMap:
+                faceDisplayTexture
+
+            emissiveFactor:
+                Qt.vector3d(
+                    1.0,
+                    1.0,
+                    1.0
+                )
+
+            metalness: 0.0
+            // Texture itself supplies the glossy black
+            // display and emissive expression graphics.
+            roughness: 0.14
+
+            alphaMode:
+                PrincipledMaterial.Blend
+        }
+
+        // -------------------------------------------------
+        // LIGHTS
+        // -------------------------------------------------
+
+        DirectionalLight {
+            eulerRotation:
+                Qt.vector3d(
+                    -28,
+                    -34,
+                    0
+                )
+
+            brightness: 1.45
+        }
+
+        PointLight {
+            position:
+                Qt.vector3d(
+                    -120,
+                    130,
+                    180
+                )
+
+            brightness: 125
+        }
+
+        PointLight {
+            position:
+                Qt.vector3d(
+                    120,
+                    50,
+                    170
+                )
+
+            // Very subtle cool edge light only.
+            // Blue identity comes from Kuma's emissive displays
+            // and pod rings, not from tinting the black visor.
+            brightness: 5
+
+            color: "#d9e9ff"
+        }
+
+        // -------------------------------------------------
+        // KUMA WARM EAR / POD ACCENT LIGHTS
+        // -------------------------------------------------
+
+        PointLight {
+            position:
+                Qt.vector3d(
+                    -72,
+                    72,
+                    115
+                )
+
+            color: "#ffd7a1"
+            brightness: 18
+        }
+
+        PointLight {
+            position:
+                Qt.vector3d(
+                    72,
+                    72,
+                    115
+                )
+
+            color: "#ffd7a1"
+            brightness: 18
+        }
+
+        // =================================================
+        // WHOLE KUMA RIG
+        // =================================================
+
+        // =================================================
+        // DEV INSPECTION TURNTABLE
+        // =================================================
+        //
+        // Inspection orientation belongs to this parent node.
+        // Kuma's own hover, head motion, ear motion and body roll
+        // remain completely untouched inside kumaRig.
+        // =================================================
+
+        Node {
+            id: inspectionTurntable
+
+            eulerRotation:
+                Qt.vector3d(
+                    root.inspectionPitch,
+                    root.inspectionYaw,
+                    0
+                )
+
+        // =================================================
+        // BODY COMPLETION R1 — FINAL VISUAL POLISH
+        // =================================================
+        //
+        // SILHOUETTE != AUTHORITY
+        // PROPORTION != COGNITION
+        // VISUAL POLISH != EXECUTION
+        //
+        // Final transform-only refinement after multi-angle
+        // inspection. Canonical GLB geometry remains unchanged.
+        // =================================================
+
+        Node {
+            id: kumaRig
+
+            // =============================================
+            // BODY COMPLETION R1 — WHOLE-BODY STATE POSE
+            // =============================================
+            //
+            // VISUAL STATE != AUTHORITY
+            // ANIMATION != COGNITION
+            // POSE != INVOCATION
+            // BODY STATE REMAINS IMMEDIATE
+            //
+            // This layer changes only presentation targets.
+            // It never changes bodyState truth or execution.
+            // =============================================
+
+            y:
+                root.hoverOffset
+                + (
+                    root.bodyState === "happy"
+                    ? root.happyBounce
+                      * (
+                          3.0
+                          + root.avatarExpressionIntensity * 1.5
+                      )
+                    : 0.0
+                )
+                + (
+                    root.bodyState === "listening"
+                    ? (
+                        1.2
+                        + root.avatarExpressionIntensity * 0.8
+                    )
+                    : (
+                        root.bodyState === "sleep"
+                        ? -2.2
+                        : (
+                            root.bodyState === "thinking"
+                            ? Math.sin(
+                                root.phase * 0.70
+                              ) * 0.65
+                            : 0.0
+                        )
+                    )
+                )
+                + (
+                    Math.sin(
+                        root.phase * 1.35
+                    )
+                    * root.avatarMotionEnergy
+                    * 1.6
+                )
+
+            scale:
+                Qt.vector3d(
+                    1.10,
+                    1.10,
+                    1.10
+                )
+
+            eulerRotation: {
+                var pitch = 0.0
+                var yaw = 0.0
+                var roll = 0.0
+
+                if (root.bodyState === "idle") {
+                    roll =
+                        Math.sin(
+                            root.phase * 0.55
+                        ) * 1.2
+                }
+                else if (
+                    root.bodyState
+                    === "happy"
+                ) {
+                    pitch =
+                        -1.2
+                        - root.avatarExpressionIntensity * 0.8
+
+                    roll =
+                        Math.sin(
+                            root.phase * 2.0
+                        ) * 2.3
+                }
+                else if (
+                    root.bodyState
+                    === "listening"
+                ) {
+                    pitch =
+                        -1.0
+                        - root.avatarExpressionIntensity * 0.6
+                }
+                else if (
+                    root.bodyState
+                    === "thinking"
+                ) {
+                    pitch = 1.3
+                    roll = -0.8
+                }
+                else if (
+                    root.bodyState
+                    === "observing"
+                ) {
+                    yaw =
+                        Math.sin(
+                            root.phase * 0.72
+                        ) * 1.8
+                }
+                else if (
+                    root.bodyState
+                    === "alert"
+                ) {
+                    pitch =
+                        -1.7
+                        - root.avatarExpressionIntensity * 0.8
+                }
+                else if (
+                    root.bodyState
+                    === "sleep"
+                ) {
+                    pitch = 3.0
+                    roll = 1.8
+                }
+
+                roll +=
+                    Math.sin(
+                        root.phase * 1.35
+                    )
+                    * root.avatarMotionEnergy
+                    * 0.9
+
+                return Qt.vector3d(
+                    pitch,
+                    yaw,
+                    roll
+                )
+            }
+
+            // =============================================
+            // BODY-3A1 CANONICAL FLOATING BODY
+            // =============================================
+
+            Node {
+                id: torsoNode
+
+                position:
+                    Qt.vector3d(
+                        0,
+                        -50,
+                        1
+                    )
+
+                scale:
+                    Qt.vector3d(
+                        1.0,
+                        (
+                            root.bodyState === "sleep"
+                            ? 1.0
+                              + root.idleBreath * 0.025
+                            : (
+                                root.bodyState === "idle"
+                                ? 1.0
+                                  + root.idleBreath * 0.012
+                                : 1.0
+                            )
+                        ),
+                        1.0
+                    )
+
+                RuntimeLoader {
+                    source:
+                        "models/body_dev/parts/torso.glb"
+                }
+
+                // -----------------------------------------
+                // DARK FLOATING UNDERSIDE
+                // -----------------------------------------
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            -34,
+                            0
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/body_bottom.glb"
+                    }
+                }
+
+                // -----------------------------------------
+                // PHYSICAL CHEST BADGE + K
+                // -----------------------------------------
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            0,
+                            41
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/chest_badge.glb"
+                    }
+                }
+
+                // -----------------------------------------
+                // REAR STATUS MODULE
+                // -----------------------------------------
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            0,
+                            -39.5
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/rear_panel.glb"
+                    }
+                }
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            4,
+                            -42.5
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/rear_light.glb"
+                    }
+                }
+            }
+
+
+            // =============================================
+            // NECK / HEAD GIMBAL
+            // =============================================
+
+            Node {
+                id: neckNode
+
+                position:
+                    Qt.vector3d(
+                        0,
+                        -17,
+                        0
+                    )
+
+                RuntimeLoader {
+                    source:
+                        "models/body_dev/parts/neck.glb"
+                }
+            }
+
+
+            // =============================================
+            // ARMS
+            //
+            // Parent pivot = shoulder.
+            // Child mesh is offset downward so rotations
+            // occur from the shoulder instead of the center.
+            // =============================================
+
+            Node {
+                id: leftArm
+
+                position:
+                    Qt.vector3d(
+                        -57,
+                        -21,
+                        5
+                    )
+
+                eulerRotation:
+                    Qt.vector3d(
+                        0,
+                        0,
+                        (
+                            root.bodyState
+                            === "happy"
+                            ? (
+                                -25
+                                - root.happyBounce * 7
+                            )
+                            : (
+                                root.bodyState
+                                === "alert"
+                                ? (
+                                    -10
+                                    - root.avatarExpressionIntensity * 4.0
+                                )
+                                : (
+                                    root.bodyState
+                                    === "listening"
+                                    ? (
+                                        -11
+                                        - root.avatarExpressionIntensity * 2.0
+                                    )
+                                    : (
+                                        root.bodyState
+                                        === "thinking"
+                                        ? -5
+                                        : (
+                                            root.bodyState
+                                            === "observing"
+                                            ? (
+                                                -9
+                                                - Math.sin(
+                                                    root.phase * 0.72
+                                                  ) * 1.5
+                                            )
+                                            : (
+                                                root.bodyState
+                                                === "sleep"
+                                                ? -3
+                                                : -7
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            -25.5,
+                            0
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/arm_left.glb"
+                    }
+                }
+            }
+
+            Node {
+                id: rightArm
+
+                position:
+                    Qt.vector3d(
+                        57,
+                        -21,
+                        5
+                    )
+
+                eulerRotation:
+                    Qt.vector3d(
+                        0,
+                        0,
+                        (
+                            root.bodyState
+                            === "happy"
+                            ? (
+                                25
+                                + root.happyBounce * 7
+                            )
+                            : (
+                                root.bodyState
+                                === "alert"
+                                ? (
+                                    10
+                                    + root.avatarExpressionIntensity * 4.0
+                                )
+                                : (
+                                    root.bodyState
+                                    === "listening"
+                                    ? (
+                                        11
+                                        + root.avatarExpressionIntensity * 2.0
+                                    )
+                                    : (
+                                        root.bodyState
+                                        === "thinking"
+                                        ? (
+                                            13
+                                            + root.avatarExpressionIntensity * 2.0
+                                        )
+                                        : (
+                                            root.bodyState
+                                            === "observing"
+                                            ? (
+                                                9
+                                                + Math.sin(
+                                                    root.phase * 0.72
+                                                  ) * 1.5
+                                            )
+                                            : (
+                                                root.bodyState
+                                                === "sleep"
+                                                ? 3
+                                                : 7
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            -25.5,
+                            0
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/arm_right.glb"
+                    }
+                }
+            }
+
+
+            // =============================================
+            // HEAD RIG
+            // =============================================
+
+            Node {
+                id: headRig
+
+                position:
+                    Qt.vector3d(
+                        0,
+                        27,
+                        0
+                    )
+
+                eulerRotation: {
+                    var pitch = 0.0
+                    var yaw = 0.0
+                    var roll = 0.0
+
+                    if (
+                        root.bodyState
+                        === "thinking"
+                    ) {
+                        pitch =
+                            3.3
+                            + root.avatarExpressionIntensity * 1.2
+
+                        roll =
+                            -3.8
+                            - root.avatarExpressionIntensity * 1.2
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "observing"
+                    ) {
+                        yaw =
+                            Math.sin(
+                                root.phase * 1.15
+                            ) * 7.0
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "listening"
+                    ) {
+                        pitch =
+                            -3.0
+                            - root.avatarExpressionIntensity * 0.8
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "alert"
+                    ) {
+                        pitch =
+                            -4.0
+                            - root.avatarExpressionIntensity * 1.4
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "focused"
+                    ) {
+                        pitch =
+                            -1.5
+                            - root.avatarExpressionIntensity * 0.7
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "happy"
+                    ) {
+                        pitch =
+                            -2.0
+                            - root.happyBounce * 1.2
+
+                        roll =
+                            Math.sin(
+                                root.phase * 2.0
+                            ) * 1.4
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "sleep"
+                    ) {
+                        pitch = 8.0
+                        roll = 3.0
+                    }
+
+                    else if (
+                        root.bodyState
+                        === "idle"
+                    ) {
+                        yaw =
+                            root.curiosityYaw
+                            + Math.sin(
+                                root.phase * 0.45
+                            ) * 1.2
+
+                        pitch =
+                            root.curiosityPitch
+                    }
+
+                    return Qt.vector3d(
+                        pitch
+                        + root.avatarGazePitch,
+                        yaw
+                        + root.avatarGazeYaw,
+                        roll
+                    )
+                }
+
+                // -----------------------------------------
+                // SHELL
+                // -----------------------------------------
+
+                RuntimeLoader {
+                    source:
+                        "models/body_dev/parts/head_shell.glb"
+                }
+
+                // -----------------------------------------
+                // FACE GLASS
+                // -----------------------------------------
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            0,
+                            -3,
+                            43.5
+                        )
+
+                    RuntimeLoader {
+                        // The real visible visor is now the
+                        // head-attached digital display below.
+                        visible: false
+
+                        source:
+                            "models/body_dev/parts/face_glass.glb"
+                    }
+                }
+
+                // =========================================
+                // LIVE DIGITAL VISOR DISPLAY
+                // =========================================
+                //
+                // Attached to headRig, therefore head yaw,
+                // pitch and roll carry Kuma's expression with it.
+                // =========================================
+
+                Model {
+                    id: digitalFaceDisplay
+
+                    source: "#Rectangle"
+
+                    position:
+                        Qt.vector3d(
+                            0,
+                            -3,
+                            54.5
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            1.02,
+                            0.72,
+                            1.0
+                        )
+
+                    materials: [
+                        faceDisplayMaterial
+                    ]
+                }
+
+                // =========================================
+                // EARS
+                // =========================================
+
+                Node {
+                    id: leftEar
+
+                    position:
+                        Qt.vector3d(
+                            -63,
+                            38,
+                            -3
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            1.05,
+                            1.05,
+                            1.05
+                        )
+
+                    eulerRotation:
+                        Qt.vector3d(
+                            -8,
+                            0,
+                            (
+                                root.bodyState
+                                === "listening"
+                                ? -17
+                                : (
+                                    root.bodyState
+                                    === "alert"
+                                    ? (
+                                        -14
+                                        - root.avatarExpressionIntensity * 2.0
+                                    )
+                                    : (
+                                        root.bodyState
+                                        === "sleep"
+                                        ? (
+                                            3
+                                            + root.leftEarTwitch * 0.35
+                                        )
+                                        : (
+                                            root.bodyState
+                                            === "thinking"
+                                            ? (
+                                                -12
+                                                + root.leftEarTwitch * 0.5
+                                            )
+                                            : (
+                                                root.bodyState
+                                                === "observing"
+                                                ? (
+                                                    -8
+                                                    + Math.sin(
+                                                        root.phase * 1.15
+                                                      ) * 3.0
+                                                    + root.leftEarTwitch
+                                                )
+                                                : (
+                                                    -8
+                                                    + root.leftEarTwitch
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/ear_left.glb"
+                    }
+                }
+
+                Node {
+                    id: rightEar
+
+                    position:
+                        Qt.vector3d(
+                            63,
+                            38,
+                            -3
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            1.05,
+                            1.05,
+                            1.05
+                        )
+
+                    eulerRotation:
+                        Qt.vector3d(
+                            -8,
+                            0,
+                            (
+                                root.bodyState
+                                === "listening"
+                                ? 17
+                                : (
+                                    root.bodyState
+                                    === "alert"
+                                    ? (
+                                        14
+                                        + root.avatarExpressionIntensity * 2.0
+                                    )
+                                    : (
+                                        root.bodyState
+                                        === "sleep"
+                                        ? (
+                                            -3
+                                            + root.rightEarTwitch * 0.35
+                                        )
+                                        : (
+                                            root.bodyState
+                                            === "thinking"
+                                            ? (
+                                                7
+                                                + root.rightEarTwitch * 0.5
+                                            )
+                                            : (
+                                                root.bodyState
+                                                === "observing"
+                                                ? (
+                                                    8
+                                                    - Math.sin(
+                                                        root.phase * 1.15
+                                                      ) * 3.0
+                                                    + root.rightEarTwitch
+                                                )
+                                                : (
+                                                    8
+                                                    + root.rightEarTwitch
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/ear_right.glb"
+                    }
+                }
+
+                // =========================================
+                // SIDE PODS
+                // =========================================
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            -61,
+                            -4,
+                            0
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            0.86,
+                            0.82,
+                            0.82
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/pod_left.glb"
+                    }
+                }
+
+                Node {
+                    position:
+                        Qt.vector3d(
+                            61,
+                            -4,
+                            0
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            0.86,
+                            0.82,
+                            0.82
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/pod_right.glb"
+                    }
+                }
+
+                // =========================================
+                // EXPRESSIVE EYES
+                // =========================================
+
+                Node {
+                    id: leftEye
+
+                    visible: false
+
+                    position:
+                        Qt.vector3d(
+                            -25
+                            + root.eyeTrack,
+                            -3,
+                            50
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            1,
+                            root.blinkScale,
+                            1
+                        )
+
+                    eulerRotation:
+                        Qt.vector3d(
+                            0,
+                            0,
+                            (
+                                root.bodyState
+                                === "focused"
+                                || root.bodyState
+                                === "alert"
+                                ? -14
+                                : (
+                                    root.bodyState
+                                    === "happy"
+                                    ? 11
+                                    : 0
+                                )
+                            )
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/eye_left.glb"
+                    }
+                }
+
+                Node {
+                    id: rightEye
+
+                    visible: false
+
+                    position:
+                        Qt.vector3d(
+                            25
+                            + root.eyeTrack,
+                            -3,
+                            50
+                        )
+
+                    scale:
+                        Qt.vector3d(
+                            1,
+                            root.blinkScale,
+                            1
+                        )
+
+                    eulerRotation:
+                        Qt.vector3d(
+                            0,
+                            0,
+                            (
+                                root.bodyState
+                                === "focused"
+                                || root.bodyState
+                                === "alert"
+                                ? 14
+                                : (
+                                    root.bodyState
+                                    === "happy"
+                                    ? -11
+                                    : 0
+                                )
+                            )
+                        )
+
+                    RuntimeLoader {
+                        source:
+                            "models/body_dev/parts/eye_right.glb"
+                    }
+                }
+            }
+        }
+        }
+
+    }
+
+    // =====================================================
+    // KUMA DIGITAL VISOR SOURCE
+    // =====================================================
+    //
+    // This Canvas is no longer drawn directly over the desktop.
+    // It is rendered off-screen and used as a live texture on a
+    // 3D plane attached to headRig.
+    // =====================================================
+
+    Item {
+        id: faceTextureSource
+
+        width: 256
+        height: 128
+
+        // Remain renderable for Texture.sourceItem but stay
+        // completely outside the visible floating window.
+        x: -1000
+        y: -1000
+
+        Canvas {
+            id: kumaFaceTexture
+
+            anchors.fill: parent
+
+            antialiasing: true
+
+            onPaint: {
+                var ctx = getContext("2d")
+
+                ctx.clearRect(
+                    0,
+                    0,
+                    width,
+                    height
+                )
+
+                // =========================================
+                // KUMA GLOSSY BLACK DIGITAL VISOR
+                // =========================================
+
+                function roundedRect(
+                    x,
+                    y,
+                    w,
+                    h,
+                    radius
+                ) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        x + radius,
+                        y
+                    )
+
+                    ctx.lineTo(
+                        x + w - radius,
+                        y
+                    )
+
+                    ctx.quadraticCurveTo(
+                        x + w,
+                        y,
+                        x + w,
+                        y + radius
+                    )
+
+                    ctx.lineTo(
+                        x + w,
+                        y + h - radius
+                    )
+
+                    ctx.quadraticCurveTo(
+                        x + w,
+                        y + h,
+                        x + w - radius,
+                        y + h
+                    )
+
+                    ctx.lineTo(
+                        x + radius,
+                        y + h
+                    )
+
+                    ctx.quadraticCurveTo(
+                        x,
+                        y + h,
+                        x,
+                        y + h - radius
+                    )
+
+                    ctx.lineTo(
+                        x,
+                        y + radius
+                    )
+
+                    ctx.quadraticCurveTo(
+                        x,
+                        y,
+                        x + radius,
+                        y
+                    )
+
+                    ctx.closePath()
+                }
+
+                var visorGradient =
+                    ctx.createLinearGradient(
+                        0,
+                        0,
+                        0,
+                        height
+                    )
+
+                visorGradient.addColorStop(
+                    0.0,
+                    "#11151d"
+                )
+
+                visorGradient.addColorStop(
+                    0.28,
+                    "#060911"
+                )
+
+                visorGradient.addColorStop(
+                    0.68,
+                    "#02040a"
+                )
+
+                visorGradient.addColorStop(
+                    1.0,
+                    "#000105"
+                )
+
+                ctx.fillStyle =
+                    visorGradient
+
+                roundedRect(
+                    4,
+                    4,
+                    width - 8,
+                    height - 8,
+                    30
+                )
+
+                ctx.fill()
+
+                // -----------------------------------------
+                // SUBTLE GLASS REFLECTION
+                // -----------------------------------------
+
+                var reflection =
+                    ctx.createLinearGradient(
+                        0,
+                        5,
+                        0,
+                        54
+                    )
+
+                reflection.addColorStop(
+                    0.0,
+                    "rgba(255,255,255,0.22)"
+                )
+
+                reflection.addColorStop(
+                    1.0,
+                    "rgba(255,255,255,0.00)"
+                )
+
+                ctx.fillStyle =
+                    reflection
+
+                roundedRect(
+                    12,
+                    10,
+                    width - 24,
+                    42,
+                    22
+                )
+
+                ctx.fill()
+
+                // Small premium highlight.
+                ctx.fillStyle =
+                    "rgba(255,255,255,0.70)"
+
+                ctx.beginPath()
+
+                ctx.ellipse(
+                    width - 25,
+                    20,
+                    4,
+                    6,
+                    0,
+                    0,
+                    Math.PI * 2
+                )
+
+                ctx.fill()
+
+                var alert =
+                    root.bodyState === "alert"
+
+                var eyeColor =
+                    alert
+                    ? "#ff626c"
+                    : "#74b9ff"
+
+                ctx.strokeStyle = eyeColor
+                ctx.fillStyle = eyeColor
+
+                ctx.lineWidth = 13
+                ctx.lineCap = "round"
+                ctx.lineJoin = "round"
+
+                var track = 0
+
+                if (
+                    root.bodyState
+                    === "observing"
+                ) {
+                    track =
+                        Math.sin(
+                            root.phase * 1.35
+                        )
+                        * 10
+                }
+
+                var left = 72
+                var right = 184
+                var centerY = 67
+
+                function happyEye(cx) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        cx - 28,
+                        centerY + 9
+                    )
+
+                    ctx.quadraticCurveTo(
+                        cx,
+                        centerY - 25,
+                        cx + 28,
+                        centerY + 9
+                    )
+
+                    ctx.stroke()
+                }
+
+                function flatEye(cx) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        cx - 25,
+                        centerY
+                    )
+
+                    ctx.lineTo(
+                        cx + 25,
+                        centerY
+                    )
+
+                    ctx.stroke()
+                }
+
+                function sleepEye(cx) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        cx - 27,
+                        centerY - 4
+                    )
+
+                    ctx.quadraticCurveTo(
+                        cx,
+                        centerY + 20,
+                        cx + 27,
+                        centerY - 4
+                    )
+
+                    ctx.stroke()
+                }
+
+                function openEye(cx) {
+                    ctx.beginPath()
+
+                    ctx.ellipse(
+                        cx + track,
+                        centerY,
+                        13,
+                        23,
+                        0,
+                        0,
+                        Math.PI * 2
+                    )
+
+                    ctx.fill()
+                }
+
+                function focusedLeft(cx) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        cx - 27,
+                        centerY - 15
+                    )
+
+                    ctx.lineTo(
+                        cx + 25,
+                        centerY + 10
+                    )
+
+                    ctx.stroke()
+                }
+
+                function focusedRight(cx) {
+                    ctx.beginPath()
+
+                    ctx.moveTo(
+                        cx - 25,
+                        centerY + 10
+                    )
+
+                    ctx.lineTo(
+                        cx + 27,
+                        centerY - 15
+                    )
+
+                    ctx.stroke()
+                }
+
+                // Natural idle blink.
+                var blinking =
+                    root.blinkClosed
+
+                if (blinking) {
+                    flatEye(left)
+                    flatEye(right)
+                }
+
+                else if (
+                    root.bodyState === "idle"
+                    || root.bodyState === "happy"
+                ) {
+                    happyEye(left)
+                    happyEye(right)
+                }
+
+                else if (
+                    root.bodyState === "thinking"
+                ) {
+                    flatEye(left)
+                    flatEye(right)
+                }
+
+                else if (
+                    root.bodyState === "focused"
+                    || root.bodyState === "alert"
+                ) {
+                    focusedLeft(left)
+                    focusedRight(right)
+                }
+
+                else if (
+                    root.bodyState === "sleep"
+                ) {
+                    sleepEye(left)
+                    sleepEye(right)
+                }
+
+                else {
+                    openEye(left)
+                    openEye(right)
+                }
+            }
+
+            Connections {
+                target: root
+
+                function onBodyStateChanged() {
+                    kumaFaceTexture.requestPaint()
+                }
+
+                function onPhaseChanged() {
+                    kumaFaceTexture.requestPaint()
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // CHEST K
+    // =====================================================
+
+    Text {
+        text: "K"
+
+        color: "#e9f2ff"
+
+        font.bold: true
+        font.pixelSize: 11
+
+        anchors.horizontalCenter:
+            parent.horizontalCenter
+
+        y:
+            132
+            - root.hoverOffset
+    }
+
+    // =====================================================
+    // THINKING
+    // =====================================================
+
+    Row {
+        visible:
+            root.bodyState
+            === "thinking"
+
+        spacing: 3
+
+        x: 142
+        y: 43
+
+        Repeater {
+            model: 3
+
+            Rectangle {
+                width: 4
+                height: 4
+
+                radius: 2
+
+                color: "#9cc8ff"
+
+                opacity:
+                    0.40
+                    + index * 0.18
+            }
+        }
+    }
+
+    // =====================================================
+    // ALERT
+    // =====================================================
+
+    Text {
+        visible:
+            root.bodyState
+            === "alert"
+
+        text: "!"
+
+        color: "#ff656d"
+
+        font.bold: true
+        font.pixelSize: 22
+
+        x: 147
+        y: 37
+    }
+
+    // =====================================================
+    // SLEEP
+    // =====================================================
+
+    Text {
+        visible:
+            root.bodyState
+            === "sleep"
+
+        text: "Zᶻ"
+
+        color: "#88baff"
+
+        font.bold: true
+        font.pixelSize: 14
+
+        x: 139
+        y: 36
+    }
+}

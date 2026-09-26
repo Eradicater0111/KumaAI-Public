@@ -1,0 +1,11 @@
+# KUMA development / validation environment.
+#
+# Runtime dependencies remain declared in requirements.txt.
+# macOS desktop collector dependencies remain in requirements-desktop.txt.
+# 3D-development-only dependency remains in requirements-3d-dev.txt.
+
+-r requirements.txt
+-r requirements-desktop.txt
+-r requirements-3d-dev.txt
+
+pytest==9.1.1

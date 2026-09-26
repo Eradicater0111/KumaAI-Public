@@ -1,0 +1,46 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Databases / runtime state
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Archives / generated bundles
+*.zip
+*.tar
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+
+# Test/cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+KumaAI-source/
+# CORE-CLEAN-1: catch malformed/backup runtime database names
+data/*.db*
+data/*.sqlite*
+data/*.sqlite3*
+.voice-venv/

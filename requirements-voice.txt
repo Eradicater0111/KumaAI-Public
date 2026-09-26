@@ -1,0 +1,14 @@
+# KUMA neural voice worker environment.
+#
+# Install into .voice-venv only.
+# Known-good interpreter family: Python 3.12.x.
+#
+# The main GUI process does not import these packages from .voice-venv.
+# Voice worker dependencies remain process-isolated from the main runtime.
+
+kokoro-mlx==0.1.2
+mlx-whisper==0.4.3
+mlx==0.32.2
+numpy==2.5.3
+soundfile==0.14.0
+huggingface-hub==2.0.0
